@@ -1,51 +1,23 @@
 #include "Time.h"
-
-////////////////////////////////////////////////////////////
-//返回系统从某个时间点开始的时间计数
-//nType为时间单位:
-//   TICK_TYPE_SECOND      0   -- unit is second.        秒
-//   TICK_TYPE_MILLISECOND 1   -- unit is millisecond. 毫秒
-//   TICK_TYPE_MICROSECOND 2   -- unit is microsecond. 微秒
-s64 gfGetTickCount(int nType)
-{
-    struct timespec tp;
-    clock_gettime(CLOCK_MONOTONIC, &tp);
-
-    if (0 == nType)
-    {
-        return ((s64)tp.tv_sec);
-    }
-
-    if (1 == nType)
-    {
-        return ((s64)tp.tv_sec) * 1000 + ((s64)tp.tv_nsec) / 1000000;
-    }
-
-    if (2 == nType)
-    {
-        return ((s64)tp.tv_sec) * 1000000 + ((s64)tp.tv_nsec) / 1000;
-    }
-
-    if (3 == nType)
-    {
-        return ((s64)tp.tv_sec) * 10 + ((s64)tp.tv_nsec) / 100000000;
-    }
-
-    return 0;
-}
+#include <stdio.h>
 
 time_t gfGetTrueTime(time_t *tTick)
 {
     return time(tTick);
 }
 
-void gfGetLocalTime(timeval &localtime)
+
+//[TODO] for other storages, need add gfTimeValSys2xxx
+BOOL gfTimeValSys2Mysql(IN timeval sysTime, IN OUT s8 *sbyMysqlDATETIME3, IN u32 dwBufLen)
 {
+    if (!sbyMysqlDATETIME3 || 0==dwBufLen)
+    {
+        return FALSE;
+    }
     struct tm tTm;
-    time_t tNow;
-    time(&tNow);
-    localtime_r(&tNow, &tTm);
-    localtime.tv_sec = mktime(&tTm);
-    localtime.tv_usec = 0;
-    return;
+    localtime_r(&(sysTime.tv_sec), &tTm);
+    snprintf(sbyMysqlDATETIME3, dwBufLen, "%04d-%02d-%02d %02d:%02d:%02d.%03ld",
+        ((s32)(tTm.tm_year + 1900)), (s32)(tTm.tm_mon + 1), tTm.tm_mday, tTm.tm_hour, tTm.tm_min, tTm.tm_sec, sysTime.tv_usec/1000);
+
+    return TRUE;
 }

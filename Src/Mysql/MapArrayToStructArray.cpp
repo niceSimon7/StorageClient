@@ -171,3 +171,121 @@ void TSecurityMapArrayToStructArray(vector<map<string, s8 *> >& vResult, vector<
     }
 }
 
+// 2. TMysqlProcessList
+void TMysqlProcessListMapArrayToStructArray(vector<map<string, s8 *> >& vResult, vector<TMysqlProcessList> &vMysqlProcessList)
+{
+    vMysqlProcessList.clear();
+    vMysqlProcessList.reserve(vResult.size());
+    vector<map<string, s8 *> >::iterator vIt;
+    map<string, s8 *>::iterator mapIt;
+    TMysqlProcessList tMysqlProcessList;
+
+    for(vIt = vResult.begin(); vIt != vResult.end(); vIt++)
+    {
+        {
+            //Init tMysqlProcessList
+            tMysqlProcessList.sdwId = 0;
+            tMysqlProcessList.sUser = "";
+            tMysqlProcessList.sHost = "";
+            tMysqlProcessList.sdb = "";
+            tMysqlProcessList.sCommand = "";
+            tMysqlProcessList.qwTime = 0;
+            tMysqlProcessList.sState = "";
+            tMysqlProcessList.sInfo = "";
+            tMysqlProcessList.dfProgress = 0.0;
+        }
+        for(mapIt = (*vIt).begin(); mapIt != (*vIt).end(); mapIt++)
+        {
+            //1. ID
+            if(0 == mapIt->first.compare("id"))
+            {
+                tMysqlProcessList.sdwId = atoi(mapIt->second);
+                continue;
+            }
+            //2. User
+            if(0 == mapIt->first.compare("user"))
+            {
+                tMysqlProcessList.sUser = mapIt->second;
+                continue;
+            }
+            //3. Host
+            if(0 == mapIt->first.compare("host"))
+            {
+                tMysqlProcessList.sHost = mapIt->second;
+                continue;
+            }
+            //4. db
+            if(0 == mapIt->first.compare("db"))
+            {
+                tMysqlProcessList.sdb= mapIt->second;
+                continue;
+            }
+            //5. Command
+            if(0 == mapIt->first.compare("command"))
+            {
+                tMysqlProcessList.sCommand = mapIt->second;
+                continue;
+            }
+            //6. Time
+            if(0 == mapIt->first.compare("time"))
+            {
+                tMysqlProcessList.qwTime = atoi(mapIt->second);
+                continue;
+            }
+            //7. State
+            if(0 == mapIt->first.compare("state"))
+            {
+                tMysqlProcessList.sState = mapIt->second;
+                continue;
+            }
+            //8. Info
+            if(0 == mapIt->first.compare("info"))
+            {
+                tMysqlProcessList.sInfo = mapIt->second;
+                continue;
+            }
+            //9. Progress
+            if(0 == mapIt->first.compare("progress"))
+            {
+                tMysqlProcessList.dfProgress = atof(mapIt->second);
+                continue;
+            }
+        }
+        vMysqlProcessList.push_back(tMysqlProcessList);
+    }
+}
+
+// 3. TMysqlStatus
+void TMysqlStatusMapArrayToStructArray(vector<map<string, s8 *> >& vResult, vector<TMysqlStatus> &vMysqlStatus)
+{
+    vMysqlStatus.clear();
+    vMysqlStatus.reserve(vResult.size());
+    vector<map<string, s8 *> >::iterator vIt;
+    map<string, s8 *>::iterator mapIt;
+    TMysqlStatus tMysqlStatus;
+
+    for(vIt = vResult.begin(); vIt != vResult.end(); vIt++)
+    {
+        {
+            //Init tMysqlProcessList
+            tMysqlStatus.sName = "";
+            tMysqlStatus.sValue = "";
+        }
+        for(mapIt = (*vIt).begin(); mapIt != (*vIt).end(); mapIt++)
+        {
+            //1. Variable_name
+            if(0 == mapIt->first.compare("variable_name"))
+            {
+                tMysqlStatus.sName = mapIt->second;
+                continue;
+            }
+            //2. Value
+            if(0 == mapIt->first.compare("value"))
+            {
+                tMysqlStatus.sValue = mapIt->second;
+                continue;
+            }
+        }
+        vMysqlStatus.push_back(tMysqlStatus);
+    }
+}

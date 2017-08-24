@@ -230,5 +230,39 @@ typedef struct
     BOOL mbExpirAble;  //是否到期限制
 }TSecurity;
 
+struct TMysqlProcessList{
+    s32 sdwId;
+    string sUser;
+    string sHost;
+    string sdb;
+    string sCommand;
+    u64 qwTime;
+    string sState;
+    string sInfo;
+    f64 dfProgress;
+
+    TMysqlProcessList(){
+        sdwId = 0;
+        sUser = "";
+        sHost = "";
+        sdb = "";
+        sCommand = "";
+        qwTime = 0;
+        sState = "";
+        sInfo = "";
+        dfProgress = 0.0;
+    }
+};
+
+struct TMysqlStatus{
+    string sName;
+    string sValue;
+
+    TMysqlStatus(){
+        sName = "";
+        sValue = "";
+    }
+};
+
 
 #endif//_BASEDATASTRUCT_H_

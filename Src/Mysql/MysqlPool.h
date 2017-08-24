@@ -1,6 +1,8 @@
 #ifndef _ORACLE_POOL_H_
 #define _ORACLE_POOL_H_
 
+#define DMYSQLPOOL_MAX_CONNECTION_NUM 200
+
 #include <string>
 #include <time.h>
 #include <mysql/mysql.h>
@@ -12,16 +14,16 @@ typedef struct tagMYCONNECTION{
 	int valid; //1--valid, 0--invalid.
 	int idle;  //1--idle,  0--busy.
 }*HMYCONNECTION;
-#define DMYSQLPOOL_MAX_CONNECTION_NUM 200
+
 
 class MysqlPool{
 public:
-	MysqlPool(const char *host, unsigned short port, const char *user, const char *password,const char *dbname, int idle_timeout=600); //µ•Œª£∫√Î
+	MysqlPool(const char *host, unsigned short port, const char *user, const char *password,const char *dbname, int idle_timeout=600);
 	virtual ~MysqlPool();
 	void Drop(HMYCONNECTION hpool);
 	HMYCONNECTION Get();
 	void Release(HMYCONNECTION hpool);
-	
+
 protected:
 	HMYCONNECTION NewConnection();
 	void CloseConnections();

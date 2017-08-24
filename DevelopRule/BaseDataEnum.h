@@ -106,24 +106,9 @@ typedef enum
 //数据库数据类型
 typedef enum
 {
-    EDBDataType_Bar = 300,		//db.bar
-    EDBDataType_Execution,		//db.execution
     EDBDataType_Security,		//db.security
-    EDBDataType_Strategy,		//db.strategy
-    EDBDataType_Position,		//db.position
-    EDBDataType_Order,			//db.openorder
-    EDBDataType_OrderStatus, //db.orderstatus
-    EDBDataType_TotalPosition,	//db.totalposition
-    EDBDataType_Quote,			//db.quote
-    EDBDataType_Trade,			//db.trade
-    EDBDataType_Transaction,	//db.transaction
-    EDBDataType_AccountInfo,	//db.t_account_info
-    EDBDataType_CancelData,		//db.t_cancel_data
-    EDBDataType_OpenData,		//db.t_open_data
-    EDBDataType_SecurityRisk,	//db.t_security_risk
-    EDBDataType_AccountRisk,	//db.t_account_risk
-    EDBDataType_Watchlist,		//db.watchlist
-    EDBDataType_Snapshot,		//db.snapshot
+    EDBDataType_ProcessList, //show processlist
+    EDBDataType_Status //show status
 } EDBDataType;
 
 
