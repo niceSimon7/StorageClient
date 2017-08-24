@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="gb2312"?>
+<root>
+<global_server>
+    <default_dbname value="TestMysqlSagesRobotDB"/>
+</global_server>
+<mysql_local>
+	<host value="localhost"/>
+	<port value="3306"/>
+	<user value="ssz"/>
+	<password value="ssz123456"/>
+	<datadb value="TestMysqlSagesRobotDB"/>
+</mysql_local>
+</root>
