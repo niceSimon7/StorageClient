@@ -14,6 +14,7 @@ void TSecurityMapArrayToStructArray(vector<map<string, string> >& vResult, vecto
     vSecurity.reserve(vResult.size());
     vector<map<string, string> >::iterator vIt;
     map<string, string>::iterator mapIt;
+    string sMapItSecond;
     struct tm tb;
     TSecurity tSecurity;
 
@@ -42,50 +43,51 @@ void TSecurityMapArrayToStructArray(vector<map<string, string> >& vResult, vecto
         }
         for(mapIt = (*vIt).begin(); mapIt != (*vIt).end(); mapIt++)
         {
-            if(0 == mapIt->second.compare(""))
+            sMapItSecond = StringTrim(mapIt->second);
+            if(0 == sMapItSecond.compare(""))
             {
                 continue;
             }
             //1. 标的ID
             if(0 == mapIt->first.compare("securityid"))
             {
-                tSecurity.mdwSecurityID = stoi(StringTrim(mapIt->second));
+                tSecurity.mdwSecurityID = stoi(sMapItSecond);
                 continue;
             }
             //2. 证券代码
             if(0 == mapIt->first.compare("securitysymbol"))
             {
-                tSecurity.msSecuritySymbol = StringTrim(mapIt->second);
+                tSecurity.msSecuritySymbol = sMapItSecond;
                 continue;
             }
             //3. 证券类别
             if(0 == mapIt->first.compare("securitytype"))
             {
-                tSecurity.meSecurityType = g_tStaticEnumMap.m_MapESecurityTypeString2Value[StringTrim(mapIt->second)];
+                tSecurity.meSecurityType = g_tStaticEnumMap.m_MapESecurityTypeString2Value[sMapItSecond];
                 continue;
             }
             //4. 上市交易所
             if(0 == mapIt->first.compare("listexchange"))
             {
-                tSecurity.meListExchange = g_tStaticEnumMap.m_MapEListExchangeString2Value[StringTrim(mapIt->second)];
+                tSecurity.meListExchange = g_tStaticEnumMap.m_MapEListExchangeString2Value[sMapItSecond];
                 continue;
             }
             //5. 交易交易所
             if(0 == mapIt->first.compare("tradingexchange"))
             {
-                tSecurity.meTradingExchange = g_tStaticEnumMap.m_MapETradingExchangeString2Value[StringTrim(mapIt->second)];
+                tSecurity.meTradingExchange = g_tStaticEnumMap.m_MapETradingExchangeString2Value[sMapItSecond];
                 continue;
             }
             //6. Currency
             if(0 == mapIt->first.compare("currency"))
             {
-                tSecurity.meCurrency = g_tStaticEnumMap.m_MapECurrencyString2Value[StringTrim(mapIt->second)];
+                tSecurity.meCurrency = g_tStaticEnumMap.m_MapECurrencyString2Value[sMapItSecond];
                 continue;
             }
             //7. 到期时间
             if(0 == mapIt->first.compare("expiration"))
             {
-                if(strptime(StringTrim(mapIt->second).c_str(), "%Y-%m-%d %H:%M:%S", &tb) != NULL)
+                if(strptime(sMapItSecond.c_str(), "%Y-%m-%d %H:%M:%S", &tb) != NULL)
                 {
                     tSecurity.mtExpiration.tv_sec = mktime(&tb);
                     tSecurity.mtExpiration.tv_usec = 0;
@@ -95,61 +97,61 @@ void TSecurityMapArrayToStructArray(vector<map<string, string> >& vResult, vecto
             //8. 执行价
             if(0 == mapIt->first.compare("strike"))
             {
-                tSecurity.mdfStrike = stof(StringTrim(mapIt->second));
+                tSecurity.mdfStrike = stof(sMapItSecond);
                 continue;
             }
             //9. 期权类型
             if(0 == mapIt->first.compare("optiontype"))
             {
-                tSecurity.msOptionType = StringTrim(mapIt->second);
+                tSecurity.msOptionType = sMapItSecond;
                 continue;
             }
             //10. 标的
             if(0 == mapIt->first.compare("underlayingsecurityid"))
             {
-                tSecurity.mdwUnderlayingSecurityID = stoi(StringTrim(mapIt->second));
+                tSecurity.mdwUnderlayingSecurityID = stoi(sMapItSecond);
                 continue;
             }
             //11. 合约大小
             if(0 == mapIt->first.compare("contractsize"))
             {
-                tSecurity.mdwContractSize = stoi(StringTrim(mapIt->second));
+                tSecurity.mdwContractSize = stoi(sMapItSecond);
                 continue;
             }
             //12. 最小报价单位
             if(0 == mapIt->first.compare("ticksize"))
             {
-                tSecurity.mdfTickSize = stof(StringTrim(mapIt->second));
+                tSecurity.mdfTickSize = stof(sMapItSecond);
                 continue;
             }
             //13. 多头保证金率
             if(0 == mapIt->first.compare(("longmarginrate")))
             {
-                tSecurity.mdfLongMarginRate = stof(StringTrim(mapIt->second));
+                tSecurity.mdfLongMarginRate = stof(sMapItSecond);
                 continue;
             }
             //14. 空头保证金率
             if(0 == mapIt->first.compare("shortmarginrate"))
             {
-                tSecurity.mdfShortMarginRate = stof(StringTrim(mapIt->second));
+                tSecurity.mdfShortMarginRate = stof(sMapItSecond);
                 continue;
             }
             //15. 总保证金率
             if(0 == mapIt->first.compare("gereralmarginrate"))
             {
-                tSecurity.mdfGeneralMarginRate = stof(StringTrim(mapIt->second));
+                tSecurity.mdfGeneralMarginRate = stof(sMapItSecond);
                 continue;
             }
             //16. ISIN
             if(0 == mapIt->first.compare("isin"))
             {
-                tSecurity.msISIN = StringTrim(mapIt->second);
+                tSecurity.msISIN = sMapItSecond;
                 continue;
             }
             //17. 是否可交易
             if(0 == mapIt->first.compare("tradeable"))
             {
-                if(0 == strcmp(StringTrim(mapIt->second).c_str(), "\001"))
+                if(0 == strcmp(sMapItSecond.c_str(), "\001"))
                 {
                     tSecurity.mbTradeAble = 1;
                 }
@@ -162,7 +164,7 @@ void TSecurityMapArrayToStructArray(vector<map<string, string> >& vResult, vecto
             //18. 是否到期
             if(0 == mapIt->first.compare("expirable"))
             {
-                if(0 == strcmp(StringTrim(mapIt->second).c_str(), "\001"))
+                if(0 == strcmp(sMapItSecond.c_str(), "\001"))
                 {
                     tSecurity.mbExpirAble = 1;
                 }
@@ -185,6 +187,7 @@ void TMysqlProcessListMapArrayToStructArray(vector<map<string, string> >& vResul
     vMysqlProcessList.reserve(vResult.size());
     vector<map<string, string> >::iterator vIt;
     map<string, string>::iterator mapIt;
+    string sMapItSecond;
     TMysqlProcessList tMysqlProcessList;
 
     for(vIt = vResult.begin(); vIt != vResult.end(); vIt++)
@@ -203,62 +206,63 @@ void TMysqlProcessListMapArrayToStructArray(vector<map<string, string> >& vResul
         }
         for(mapIt = (*vIt).begin(); mapIt != (*vIt).end(); mapIt++)
         {
-            if(0 == mapIt->second.compare(""))
+            sMapItSecond = StringTrim(mapIt->second);
+            if(0 == sMapItSecond.compare(""))
             {
                 continue;
             }
             //1. ID
             if(0 == mapIt->first.compare("id"))
             {
-                tMysqlProcessList.sdwId = stoi(StringTrim(mapIt->second));
+                tMysqlProcessList.sdwId = stoi(sMapItSecond);
                 continue;
             }
             //2. User
             if(0 == mapIt->first.compare("user"))
             {
-                tMysqlProcessList.sUser = StringTrim(mapIt->second);
+                tMysqlProcessList.sUser = sMapItSecond;
                 continue;
             }
             //3. Host
             if(0 == mapIt->first.compare("host"))
             {
-                tMysqlProcessList.sHost = StringTrim(mapIt->second);
+                tMysqlProcessList.sHost = sMapItSecond;
                 continue;
             }
             //4. db
             if(0 == mapIt->first.compare("db"))
             {
-                tMysqlProcessList.sdb= StringTrim(mapIt->second);
+                tMysqlProcessList.sdb= sMapItSecond;
                 continue;
             }
             //5. Command
             if(0 == mapIt->first.compare("command"))
             {
-                tMysqlProcessList.sCommand = StringTrim(mapIt->second);
+                tMysqlProcessList.sCommand = sMapItSecond;
                 continue;
             }
             //6. Time
             if(0 == mapIt->first.compare("time"))
             {
-                tMysqlProcessList.qwTime = stoi(StringTrim(mapIt->second));
+                tMysqlProcessList.qwTime = stoi(sMapItSecond);
                 continue;
             }
             //7. State
             if(0 == mapIt->first.compare("state"))
             {
-                tMysqlProcessList.sState = StringTrim(mapIt->second);
+                tMysqlProcessList.sState = sMapItSecond;
                 continue;
             }
             //8. Info
             if(0 == mapIt->first.compare("info"))
             {
-                tMysqlProcessList.sInfo = StringTrim(mapIt->second);
+                tMysqlProcessList.sInfo = sMapItSecond;
                 continue;
             }
             //9. Progress
             if(0 == mapIt->first.compare("progress"))
             {
-                tMysqlProcessList.dfProgress = stof(StringTrim(mapIt->second));
+                tMysqlProcessList.dfProgress = stof(sMapItSecond);
                 continue;
             }
         }
@@ -273,6 +277,7 @@ void TMysqlStatusMapArrayToStructArray(vector<map<string, string> >& vResult, ve
     vMysqlStatus.reserve(vResult.size());
     vector<map<string, string> >::iterator vIt;
     map<string, string>::iterator mapIt;
+    string sMapItSecond;
     TMysqlStatus tMysqlStatus;
 
     for(vIt = vResult.begin(); vIt != vResult.end(); vIt++)
@@ -284,20 +289,21 @@ void TMysqlStatusMapArrayToStructArray(vector<map<string, string> >& vResult, ve
         }
         for(mapIt = (*vIt).begin(); mapIt != (*vIt).end(); mapIt++)
         {
-            if(0 == mapIt->second.compare(""))
+            sMapItSecond = StringTrim(mapIt->second);
+            if(0 == sMapItSecond.compare(""))
             {
                 continue;
             }
             //1. Variable_name
             if(0 == mapIt->first.compare("variable_name"))
             {
-                tMysqlStatus.sName = StringTrim(mapIt->second);
+                tMysqlStatus.sName = sMapItSecond;
                 continue;
             }
             //2. Value
             if(0 == mapIt->first.compare("value"))
             {
-                tMysqlStatus.sValue = StringTrim(mapIt->second);
+                tMysqlStatus.sValue = sMapItSecond;
                 continue;
             }
         }
