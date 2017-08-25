@@ -7,15 +7,15 @@
 
 struct S_VectorConfig
 {
-	char szName[80];
-	char szSQL[8192];
+    char szName[80];
+    char szSQL[8192];
 };
 
 struct S_DiskConfig
 {
-	int nType;
-	char szBaseDir[128];
-	int nReserveSpace;
+    int nType;
+    char szBaseDir[128];
+    int nReserveSpace;
 };
 
 bool Cfg_Load(const char *config_xml_file=NULL);
@@ -27,10 +27,10 @@ void Cfg_DecryptSectionItem(const char *section_name, const char *item_name, cha
 void Cfg_EncryptSectionItem(const char *section_name, const char *item_name,char *item_value, int max_size);
 void Cfg_ServerAddress(const char *server_name, char *ip, int max_size, unsigned short *port);
 void Cfg_MysqlServer(const char *mysql_name,
-	char *host, int host_max_size,
-	unsigned short *port,
-	char *user, int user_max_size,
-	char *password, int password_max_size);
+                     char *host, int host_max_size,
+                     unsigned short *port,
+                     char *user, int user_max_size,
+                     char *password, int password_max_size);
 
 void Cfg_GetVectorList(struct S_VectorConfig *pVectors, int nMaxCount, int *pnReturnCount);
 

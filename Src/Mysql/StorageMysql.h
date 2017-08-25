@@ -3,6 +3,7 @@
 
 #define MAX_REMOTE_MYSQL_COUNT 16
 #define MAX_QUEUED_SQL_TASK_COUNT 4000
+#define MAX_COLUME_NUM 100
 
 #define SQL_MODE_SYNC 1
 #define SQL_MODE_ASYNC 2
@@ -30,8 +31,9 @@ using namespace std;
 class CStorageMysql : public CStorageBase
 {
 public:
-    EECode ReadFromDB(IN EDBDataType eDBDataType, IN OUT void* pData);
+    EECode ReadFromDB(IN EDBDataType eDBDataType, IN OUT void* pData, u32 dwMaxRowCount);
     EECode WriteToDB(IN EDBDataType eDBDataType, IN s32 sdwWriteMode, IN void* pData);
+    EECode DeleteFromDB(IN s8* sbySql);
 
 public:
     static CStorageMysql* Create();
@@ -48,14 +50,12 @@ public:
         m_bExitFlag = bExitFlag;
     }
 
-
 private:
     CStorageMysql();
     ~CStorageMysql();
 
-    EECode Mysql_Query(const s8* pszSql, s8 **ppResult, s32 *pdwRowCount);
+    EECode Mysql_Query(const s8* pszSql, vector<map<string,string> >& vResult, u32 dwMaxRowCount);
     EECode Mysql_Execute(const s8* pszUpdateSql, s32 nLocalRunMode);
-    EECode DeleteFromDB(IN s8* sbySql);
 
     BOOL mysqlCheckReady();
 //    void connectMysql();

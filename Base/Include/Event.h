@@ -10,26 +10,26 @@
 class MyEvent
 {
 public:
-	MyEvent();
-	virtual ~MyEvent();
+    MyEvent();
+    virtual ~MyEvent();
 
-	//Wait a signal to be signed.
-	//return:
-	//  0 -- timeout.
-	//  1 -- have a event.
-	int Wait(int nTimeout);  //单位：毫秒
+    //Wait a signal to be signed.
+    //return:
+    //  0 -- timeout.
+    //  1 -- have a event.
+    int Wait(int nTimeout);  //单位：毫秒
 
 
-	//Tiger a signal.
-	void Post();
+    //Tiger a signal.
+    void Post();
 
 protected:
-	pthread_mutex_t _mutex;
-	pthread_cond_t  _cond;
+    pthread_mutex_t _mutex;
+    pthread_cond_t  _cond;
     //timespec _tsp;
-   
+
 private:
-	void Maketimeout(struct timespec *tsp,int nTimeout); //单位：毫秒
+    void Maketimeout(struct timespec *tsp,int nTimeout); //单位：毫秒
 
 };
 

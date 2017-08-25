@@ -2,15 +2,15 @@
 #define _MUTEX_H_
 
 
- #include <pthread.h>
+#include <pthread.h>
 
 class MyMutex
 {
 public:
-	MyMutex();
-	virtual ~MyMutex();
-	virtual void Lock();
-	virtual void Unlock();
+    MyMutex();
+    virtual ~MyMutex();
+    virtual void Lock();
+    virtual void Unlock();
 protected:
     pthread_mutex_t _cri;
 

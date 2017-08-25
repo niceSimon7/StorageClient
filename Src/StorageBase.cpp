@@ -6,8 +6,9 @@ extern BOOL gfTimeValSys2Mysql(IN timeval sysTime, IN OUT s8 *sbyMysqlDATETIME3,
 
 CStorageBase* CStorageBase::Create()
 {
-	CStorageBase *result = new CStorageBase();
-    if ((result) && (EECode_OK != result->Construct())) {
+    CStorageBase *result = new CStorageBase();
+    if ((result) && (EECode_OK != result->Construct()))
+    {
         result->clearData();
         result->Delete();
         result = NULL;
@@ -22,40 +23,40 @@ CStorageBase::CStorageBase()
 
 EECode CStorageBase::Construct()
 {
-	return EECode_OK;
+    return EECode_OK;
 }
 
 CStorageBase::~CStorageBase()
 {
-	clearData();
+    clearData();
 }
 
 
 void CStorageBase::Delete()
 {
-	clearData();
-	delete this;
+    clearData();
+    delete this;
 }
 
 // general functions
 EECode CStorageBase::InitStorage()
 {
-	return EECode_NoImplement;
+    return EECode_NoImplement;
 }
 
 EECode CStorageBase::DeInitStorage()
 {
-	return EECode_NoImplement;
+    return EECode_NoImplement;
 }
 
 EECode CStorageBase::ReadFromDB(IN EDBDataType eDBDataType, IN OUT void* pData)
 {
-	return EECode_NoImplement;
+    return EECode_NoImplement;
 }
 
 EECode CStorageBase::WriteToDB(IN EDBDataType eDBDataType, IN s32 sdwWriteMode, IN void* pData)
 {
-	return EECode_NoImplement;
+    return EECode_NoImplement;
 }
 
 void CStorageBase::clearData()

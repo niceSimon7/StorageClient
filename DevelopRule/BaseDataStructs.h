@@ -228,9 +228,10 @@ typedef struct
     string msISIN;//国际证券识别编码
     BOOL mbTradeAble;  //可交易
     BOOL mbExpirAble;  //是否到期限制
-}TSecurity;
+} TSecurity;
 
-struct TMysqlProcessList{
+struct TMysqlProcessList
+{
     s32 sdwId;
     string sUser;
     string sHost;
@@ -241,7 +242,8 @@ struct TMysqlProcessList{
     string sInfo;
     f64 dfProgress;
 
-    TMysqlProcessList(){
+    TMysqlProcessList()
+    {
         sdwId = 0;
         sUser = "";
         sHost = "";
@@ -254,11 +256,13 @@ struct TMysqlProcessList{
     }
 };
 
-struct TMysqlStatus{
+struct TMysqlStatus
+{
     string sName;
     string sValue;
 
-    TMysqlStatus(){
+    TMysqlStatus()
+    {
         sName = "";
         sValue = "";
     }

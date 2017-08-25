@@ -13,6 +13,7 @@ CStorageMysql* CStorageMysql::Create()
     CStorageMysql *result = new CStorageMysql();
     if ((result) && (EECode_OK != result->Construct()))
     {
+        delete result;
         result = NULL;
     }
     return result;
@@ -94,19 +95,21 @@ CStorageMysql::~CStorageMysql()
 }
 
 
-EECode CStorageMysql::Mysql_Query(const s8* pszSql, s8 **ppResult, s32 *pdwRowCount)
+EECode CStorageMysql::Mysql_Query(const s8* pszSql, vector<map<string,string> >& vResult, u32 dwMaxRowCount)
 {
-    s32 nLen,nUsedLen,nMaxLen;
-    s32 i,nRet;
-    s8 *pszOut;
+    s32 i, nRet;
     BOOL bReady;
     HMYCONNECTION hconn;
     MYSQL_RES *res;
     MYSQL_ROW row;
     MYSQL_FIELD *fields;
     uint32_t nFieldCount,nRowCount;
-    s8 *pszGBKSQL,*pszUTF8Str,*pszFinalSQL;
-    *ppResult = NULL;
+    char* szFieldNames[MAX_COLUME_NUM];
+    s8 *pszGBKSQL,*pszFinalSQL;
+    map<string, string > mapRow;
+    vResult.clear();
+    vResult.reserve(dwMaxRowCount);
+    EECode eStatus = EECode_OK;
 
     bReady = mysqlCheckReady();
     if (!bReady)
@@ -133,14 +136,9 @@ EECode CStorageMysql::Mysql_Query(const s8* pszSql, s8 **ppResult, s32 *pdwRowCo
     delete pszGBKSQL;
 
     //先分配4096字节
-    pszOut = NULL;
-    nMaxLen = 0;
-    nUsedLen = 0;
-
     nRet = mysql_query(hconn->pmysql, pszSql);
     if (0==nRet)
     {
-        nRowCount = 0;
         res = mysql_use_result(hconn->pmysql);
         if (res)
         {
@@ -150,66 +148,29 @@ EECode CStorageMysql::Mysql_Query(const s8* pszSql, s8 **ppResult, s32 *pdwRowCo
             nRet = 0;
             for (i=0; i<nFieldCount; i++)
             {
-                nRet += TableText_AddField(&pszOut, &nMaxLen, &nUsedLen, fields[i].name);
-            }
-            nRet += TableText_FinishLine(&pszOut, &nMaxLen, &nUsedLen);
-
-            if (0!=nRet)
-            {
-//                LogMessage("CStorageMysql::Mysql_Query, add the title line error!");
-                m_localdb->pMysqlPool->Release(hconn);
-                delete pszFinalSQL;
-                delete pszOut;
-                return EECode_Error;
+                szFieldNames[i] = StringToLower(fields[i].name);
             }
 
             //写入数据（后续N行）。
+            nRowCount = 0;
             while((row=mysql_fetch_row(res))!=NULL)
             {
-                if (nRowCount>=m_nMaxRowCount)
+                if (nRowCount>=dwMaxRowCount)
                 {
 //                    LogMessage("CStorageMysql::Mysql_Query, rows too many!");
-                    return EECode_TooMany;
+                    eStatus = EECode_TooMany;
+                    break;
                 }
+
+                mapRow.clear();
                 for (i=0; i<(s32)nFieldCount; i++)
                 {
-                    if (MYSQL_TYPE_VARCHAR==fields[i].type || MYSQL_TYPE_STRING==fields[i].type || MYSQL_TYPE_VAR_STRING==fields[i].type)
-                    {
-                        //字符串，检查字符集。如果不是utf-8就需要转换字符集。——未实现，假定返回值都是gbk，需要转成utf-8
-                        pszUTF8Str = GBKToUTF8(row[i]?row[i]:"");
-                        nRet = TableText_AddField(&pszOut, &nMaxLen, &nUsedLen, pszUTF8Str);
-                        delete pszUTF8Str;
-                        if (0!=nRet)
-                        {
-//                            LogMessage("CStorageMysql::Mysql_Query, DBText_AddField() failed!");
-                            return EECode_Error;
-                        }
-                    }
-                    else
-                    {
-                        nRet = TableText_AddField(&pszOut, &nMaxLen, &nUsedLen, row[i]?row[i]:"");
-                        if (0!=nRet)
-                        {
-//                            LogMessage("CStorageMysql::Mysql_Query, DBText_AddField() failed!");
-                            return EECode_Error;
-                        }
-                    }
+                    mapRow[szFieldNames[i]] = row[i]?row[i]:"";
                 }
-                nRet = TableText_FinishLine(&pszOut, &nMaxLen, &nUsedLen);
-                if (0!=nRet)
-                {
-//                    LogMessage("CStorageMysql::Mysql_Query, DBText_FinishLine() failed!");
-                    return EECode_Error;
-                }
+                vResult.push_back(mapRow);
                 nRowCount++;
             }
             mysql_free_result(res);
-        }
-        if (0==nRowCount)
-        {
-            //无数据
-            delete pszOut;
-            pszOut = NULL;
         }
     }
     else
@@ -222,12 +183,10 @@ EECode CStorageMysql::Mysql_Query(const s8* pszSql, s8 **ppResult, s32 *pdwRowCo
         else
         {
 //            LogMessage("CStorageMysql::Mysql_Query, mysql_query() failed: Error %u (%s)", mysql_errno(hconn->pmysql), mysql_error(hconn->pmysql));
-                    cout << "CStorageMysql::Mysql_Query, mysql_query() failed: Error "<< mysql_error(hconn->pmysql) << endl;
+            cout << "CStorageMysql::Mysql_Query, mysql_query() failed: Error "<< mysql_error(hconn->pmysql) << endl;
             m_localdb->pMysqlPool->Release(hconn);
         }
         hconn = NULL;
-        delete pszOut;
-        pszOut = NULL;
         delete pszFinalSQL;
         return EECode_Error;
     }
@@ -238,9 +197,7 @@ EECode CStorageMysql::Mysql_Query(const s8* pszSql, s8 **ppResult, s32 *pdwRowCo
         m_localdb->pMysqlPool->Release(hconn);
     }
 
-    *ppResult = pszOut;
-    *pdwRowCount = nRowCount;
-    return EECode_OK;
+    return eStatus;
 }
 
 
@@ -257,61 +214,61 @@ EECode CStorageMysql::Mysql_Execute(const s8* pszUpdateSql, s32 nLocalRunMode)
     }
 
     //更新远程库
-	nLen = strlen(pszUpdateSql);
-	for (i=0;i<m_nRemoteCount;i++)
-	{
-		m_remotedbs[i]->taskMutex.Lock();
-		if (m_remotedbs[i]->nTaskCount < MAX_QUEUED_SQL_TASK_COUNT)
-		{
-			sql = new s8[nLen+1];
-			if (!sql)
-			{
-				m_remotedbs[i]->taskMutex.Unlock();
+    nLen = strlen(pszUpdateSql);
+    for (i=0; i<m_nRemoteCount; i++)
+    {
+        m_remotedbs[i]->taskMutex.Lock();
+        if (m_remotedbs[i]->nTaskCount < MAX_QUEUED_SQL_TASK_COUNT)
+        {
+            sql = new s8[nLen+1];
+            if (!sql)
+            {
+                m_remotedbs[i]->taskMutex.Unlock();
 //				LogMessage("can not allocate memory for sql in Mysql_Execute().");
-				return EECode_Error;
-			}
-			memcpy(sql, pszUpdateSql, nLen+1);
+                return EECode_Error;
+            }
+            memcpy(sql, pszUpdateSql, nLen+1);
 
-			m_remotedbs[i]->taskEvent.Post();
-			m_remotedbs[i]->tasks.push_back(sql);
-			m_remotedbs[i]->nTaskCount ++;
-		}
-		else
-		{
+            m_remotedbs[i]->taskEvent.Post();
+            m_remotedbs[i]->tasks.push_back(sql);
+            m_remotedbs[i]->nTaskCount ++;
+        }
+        else
+        {
 //			LogMessage("too many queued task in remotedb %d in Mysql_Execute().", i);
-		}
-		m_remotedbs[i]->taskMutex.Unlock();
-	}
+        }
+        m_remotedbs[i]->taskMutex.Unlock();
+    }
 
 
-	//更新本地库
-	EECode eStatus = EECode_OK;
-	if (SQL_MODE_ASYNC==nLocalRunMode)
-	{
-		//异步更新即可
-		m_localdb->taskMutex.Lock();
-		if (m_localdb->nTaskCount < MAX_QUEUED_SQL_TASK_COUNT)
-		{
-			sql = new s8[nLen+1];
-			if (!sql)
-			{
-				m_localdb->taskMutex.Unlock();
+    //更新本地库
+    EECode eStatus = EECode_OK;
+    if (SQL_MODE_ASYNC==nLocalRunMode)
+    {
+        //异步更新即可
+        m_localdb->taskMutex.Lock();
+        if (m_localdb->nTaskCount < MAX_QUEUED_SQL_TASK_COUNT)
+        {
+            sql = new s8[nLen+1];
+            if (!sql)
+            {
+                m_localdb->taskMutex.Unlock();
 //				LogMessage("can not allocate memory for sql 2 in Mysql_Execute().");
-				return EECode_Error;
-			}
-			memcpy(sql, pszUpdateSql, nLen+1);
-			m_localdb->taskEvent.Post();
-			m_localdb->tasks.push_back(sql);
-			m_localdb->nTaskCount++;
-			nRet = 0;
-		}
-		else
-		{
+                return EECode_Error;
+            }
+            memcpy(sql, pszUpdateSql, nLen+1);
+            m_localdb->taskEvent.Post();
+            m_localdb->tasks.push_back(sql);
+            m_localdb->nTaskCount++;
+            nRet = 0;
+        }
+        else
+        {
 //			LogMessage("too many queued task in m_localdb in Mysql_Execute().");
-			eStatus = EECode_TooMany;
-		}
-		m_localdb->taskMutex.Unlock();
-	}
+            eStatus = EECode_TooMany;
+        }
+        m_localdb->taskMutex.Unlock();
+    }
     else if(SQL_MODE_SYNC==nLocalRunMode)
     {
         //同步更新，马上执行该SQL语句
@@ -353,12 +310,11 @@ EECode CStorageMysql::Mysql_Execute(const s8* pszUpdateSql, s32 nLocalRunMode)
 }
 
 
-EECode CStorageMysql::ReadFromDB(IN EDBDataType eDBDataType, IN OUT void* pData)
+EECode CStorageMysql::ReadFromDB(IN EDBDataType eDBDataType, IN OUT void* pData, u32 dwMaxRowCount)
 {
     s8* sbySql = NULL;
     s8 * pszOut = NULL;
-    vector<map<string, s8 *> > vResult;
-    s32 dwRowCount;
+    vector<map<string, string> > vResult;
     EECode eStatus;
 
     if(pData == NULL)
@@ -372,12 +328,11 @@ EECode CStorageMysql::ReadFromDB(IN EDBDataType eDBDataType, IN OUT void* pData)
     case EDBDataType_Security:
     {
         sbySql = (s8*)"select * from security;";
-        eStatus = this->Mysql_Query(sbySql, &pszOut, &dwRowCount);
+        eStatus = Mysql_Query(sbySql, vResult, dwMaxRowCount);
         if(eStatus != EECode_OK)
         {
             return eStatus;
         }
-        TableStringToMapArray(pszOut, vResult, dwRowCount);
 
         TSecurityMapArrayToStructArray(vResult, *(vector<TSecurity>*)pData);
         break;
@@ -385,12 +340,11 @@ EECode CStorageMysql::ReadFromDB(IN EDBDataType eDBDataType, IN OUT void* pData)
     case EDBDataType_ProcessList:
     {
         sbySql = (s8*)"show processlist;";
-        eStatus = this->Mysql_Query(sbySql, &pszOut, &dwRowCount);
+        eStatus = this->Mysql_Query(sbySql, vResult, dwMaxRowCount);
         if(eStatus != EECode_OK)
         {
             return eStatus;
         }
-        TableStringToMapArray(pszOut, vResult, dwRowCount);
 
         TMysqlProcessListMapArrayToStructArray(vResult, *(vector<TMysqlProcessList>*)pData);
         break;
@@ -398,12 +352,11 @@ EECode CStorageMysql::ReadFromDB(IN EDBDataType eDBDataType, IN OUT void* pData)
     case EDBDataType_Status:
     {
         sbySql = (s8*)"show status;";
-        eStatus = this->Mysql_Query(sbySql, &pszOut, &dwRowCount);
+        eStatus = this->Mysql_Query(sbySql, vResult, dwMaxRowCount);
         if(eStatus != EECode_OK)
         {
             return eStatus;
         }
-        TableStringToMapArray(pszOut, vResult, dwRowCount);
 
         TMysqlStatusMapArrayToStructArray(vResult, *(vector<TMysqlStatus>*)pData);
         break;
@@ -591,68 +544,13 @@ BOOL CStorageMysql::mysqlCheckReady()
 
     bFound = false;
     m_bLocalDBReady = true;
-    /*
-    sprintf(szSQL,"select Fpara_value from %s.t_para where Fmod_name='dbsync' and Fpara_name='sync_end_time'", m_szDefaultDBName);
-    nRet = mysql_query(hconn->pmysql, szSQL);
-    if (0==nRet)
-    {
-    	res = mysql_use_result(hconn->pmysql);
-    	if(res)
-    	{
-    		while((row=mysql_fetch_row(res))!=NULL)
-    		{
-    			strncpy(szSyncEndTime,row[0]?row[0]:"", sizeof(szSyncEndTime)-1);
-    			szSyncEndTime[sizeof(szSyncEndTime)-1] = 0;
-    			bFound = true;
-    		}
-    		mysql_free_result(res);
-    	}
-    	if (bFound)
-    	{
-    		//本地库同步完成，设置标志
-    		m_bLocalDBReady = true;
-    	}
-    }
-    else
-    {
-    	strncpy(szError,mysql_error(hconn->pmysql),sizeof(szError));
-    	szError[sizeof(szError)-1] = 0;
-    	if (CR_SERVER_GONE_ERROR==nRet || CR_SERVER_LOST==nRet || CR_COMMANDS_OUT_OF_SYNC==nRet || CR_UNKNOWN_ERROR==nRet) {
-    		m_localdb->pMysqlPool->Drop(hconn);
-    	} else {
-    		m_localdb->pMysqlPool->Release(hconn);
-    	}
-    	LogMessage("mysqlCheckReady() failed %d,%s", nRet, szError);
-    	hconn = NULL;
-    	m_bLocalDBReady = false;
-    }
-    */
+
     if (hconn)
     {
         m_localdb->pMysqlPool->Release(hconn);
     }
     return m_bLocalDBReady;
 }
-
-//void CStorageMysql::connectMysql()
-//{
-//    HMYCONNECTION hconn = NULL;
-//    hconn = m_localdb->pMysqlPool->Get();
-//    for(int i=0; i<10000000; i++)
-//    {
-////        cout <<"Connect "<< i<< endl;
-//        if (!hconn)
-//        {
-//            //数据库无法连接
-////            cout<<"Cannot Connect" << endl;
-//        }
-////        if (hconn)
-////        {
-////            cout<<"Release Connect"<< endl;
-////            m_localdb->pMysqlPool->Release(hconn);
-////        }
-//    }
-//}
 
 void* _MysqlWorkThreadProc(void* lpParameter)
 {
@@ -797,9 +695,9 @@ void CStorageMysql::destroyMysqlWorkArea(struct TMysqlWorkArea *pMysqlWorkArea)
         sql = pMysqlWorkArea->tasks.front();
         pMysqlWorkArea->tasks.pop_front();
         if (sql)//fix potential bug
-		{
-			delete sql;
-		}
+        {
+            delete sql;
+        }
     }
 
     delete pMysqlWorkArea->pMysqlPool;

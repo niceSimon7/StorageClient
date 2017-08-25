@@ -14,10 +14,10 @@ output_siz ---缓冲区output的长度
 result_length --- 编码后的数据块长度。
 返回值：0 成功
         -1失败
-注：编码后的数据长度为：((input_len+2)/3)*4  
+注：编码后的数据长度为：((input_len+2)/3)*4
 ---------------------------------------------------------------*/
-int Base64_Encode(const unsigned char* input, int input_len, char* output, 
-				int output_size, int* result_length);
+int Base64_Encode(const unsigned char* input, int input_len, char* output,
+                  int output_size, int* result_length);
 
 
 /*-------------------------------------------------------------
@@ -34,8 +34,8 @@ result_length --- 解码后的数据块长度。
     如果每个Group中都有3个字节数据，则解码后的数据长度为：
 	(input_len*3)/4.
 ---------------------------------------------------------------*/
-int Base64_Decode(const char* input, int input_len, unsigned char* output, 
-						int output_size, int* result_length);
+int Base64_Decode(const char* input, int input_len, unsigned char* output,
+                  int output_size, int* result_length);
 
 #ifdef __cplusplus
 }

@@ -5,6 +5,7 @@
 #include "BaseType.h"
 #include "Config.h"
 #include "File.h"
+#include "Time.h"
 #include <string>
 #include <vector>
 #include <map>
@@ -46,20 +47,51 @@ int main(int argc, const char *argv[])
 
     int ret = -1;
 
-    if (0 != (ret = ut_init_params(argc, argv))) {
-       printf("ut_init_params fail, return %d.\n", ret);
-       return ret;
+    if (0 != (ret = ut_init_params(argc, argv)))
+    {
+        printf("ut_init_params fail, return %d.\n", ret);
+        return ret;
     }
 
 
     vector<TSecurity> vSecurity;
+    f64 dfBegin, dfFinish;
     CStorageMysql *mysql = CStorageMysql::Create();
     mysql->InitStorage();
+    /////////////////////////////////////////////////////////
+// Write 100000 items
+    EECode eStatus1 = mysql->ReadFromDB(EDBDataType_Security, &vSecurity, 3500);
+    TSecurity tSecurity = vSecurity[0];
+    vSecurity.clear();
 
-    EECode eStatus = mysql->ReadFromDB(EDBDataType_Security, &vSecurity);
+    for(int i=3120; i<100000; i++)
+    {
+        tSecurity.mdwSecurityID = i+100000;
+        tSecurity.mdwUnderlayingSecurityID = 2750;
+        tSecurity.msSecuritySymbol = to_string(i+100000);
+        vSecurity.push_back(tSecurity);
+    }
+    dfBegin = getWallSec();
+    EECode eStatus2 = mysql->WriteToDB(EDBDataType_Security, SQL_MODE_SYNC, &vSecurity);
+    dfFinish = getWallSec();
+    cout << "Security WriteToDB(9.7W Lines): " <<dfFinish - dfBegin << "s" << endl;
 
+    // read 100000 items
+    vSecurity.clear();
+    dfBegin = getWallSec();
+    EECode eStatus3 = mysql->ReadFromDB(EDBDataType_Security, &vSecurity, 100000);
+    dfFinish = getWallSec();
+    cout << "Security ReadFromDB(10W Lines): "<<dfFinish - dfBegin << "s" << endl;
 
-    cout<<"OK"<<endl;
+    // delete 100000 items
+    EECode eStatus4;
+    for(int i=3120; i<100000; i++)
+    {
+        s8 sbySql[512] = {0, };
+        snprintf(sbySql, sizeof(sbySql), "delete from security where securityid = %u;", i+100000);
+        eStatus4 = mysql->DeleteFromDB(sbySql);
+    }
+    ////////////////////////////////////////////////////////////
     mysql->DeInitStorage();
     return 0;
 }
