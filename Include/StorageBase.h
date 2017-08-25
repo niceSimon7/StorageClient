@@ -58,9 +58,10 @@ public:
     引用全局变量：无
     输入参数：  EDBDataType eDBDataType，数据类型
     			void* pData，用于数据输出的存储空间指针
+    			u32 dwMaxRowCount，最大读取行数
     返回值：成功返回EECode_OK，失败返回错误码
     ============================================================*/
-    virtual EECode ReadFromDB(IN EDBDataType eDBDataType, IN OUT void* pData);
+    virtual EECode ReadFromDB(IN EDBDataType eDBDataType, IN OUT void* pData, u32 dwMaxRowCount);
 
 
     /*===========================================================

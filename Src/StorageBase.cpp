@@ -49,7 +49,7 @@ EECode CStorageBase::DeInitStorage()
     return EECode_NoImplement;
 }
 
-EECode CStorageBase::ReadFromDB(IN EDBDataType eDBDataType, IN OUT void* pData)
+EECode CStorageBase::ReadFromDB(IN EDBDataType eDBDataType, IN OUT void* pData, u32 dwMaxRowCount)
 {
     return EECode_NoImplement;
 }
