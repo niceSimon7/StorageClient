@@ -6,8 +6,15 @@
 <mysql_local>
 	<host value="localhost"/>
 	<port value="3306"/>
-	<user value="ssz"/>
-	<password value="ssz123456"/>
+	<user value="Your Name"/>
+	<password value="Your Password"/>
 	<datadb value="TestMysqlSagesRobotDB"/>
 </mysql_local>
+<mysql_remote1>
+	<host value="139.198.191.145"/>
+	<port value="3306"/>
+	<user value="Your Name"/>
+	<password value="Your Password"/>
+	<datadb value="TestMysqlSagesRobotDB"/>
+</mysql_remote1>
 </root>

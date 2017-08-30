@@ -61,7 +61,7 @@ public:
     			u32 dwMaxRowCount，最大读取行数
     返回值：成功返回EECode_OK，失败返回错误码
     ============================================================*/
-    virtual EECode ReadFromDB(IN EDBDataType eDBDataType, IN OUT void* pData, u32 dwMaxRowCount);
+    virtual EECode ReadFromDB(IN EDBDataType eDBDataType, IN u32 dwMaxRowCount, IN OUT void* pData);
 
 
     /*===========================================================

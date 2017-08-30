@@ -59,29 +59,31 @@ int main(int argc, const char *argv[])
     CStorageMysql *mysql = CStorageMysql::Create();
     mysql->InitStorage();
     /////////////////////////////////////////////////////////
-//// Write 100000 items
-//    EECode eStatus1 = mysql->ReadFromDB(EDBDataType_Security, &vSecurity, 3500);
-//    TSecurity tSecurity = vSecurity[0];
-//    vSecurity.clear();
-//
-//    for(int i=3120; i<100000; i++)
-//    {
-//        tSecurity.mdwSecurityID = i+100000;
-//        tSecurity.mdwUnderlayingSecurityID = 2750;
-//        tSecurity.msSecuritySymbol = to_string(i+100000);
-//        vSecurity.push_back(tSecurity);
-//    }
-//    dfBegin = getWallSec();
-//    EECode eStatus2 = mysql->WriteToDB(EDBDataType_Security, SQL_MODE_SYNC, &vSecurity);
-//    dfFinish = getWallSec();
-//    cout << "Security WriteToDB(9.7W Lines): " <<dfFinish - dfBegin << "s" << endl;
-
-    // read 100000 items
+// Write 100000 items
+    EECode eStatus1 = mysql->ReadFromDB(EDBDataType_Security, 3500, &vSecurity);
+    TSecurity tSecurity = vSecurity[0];
     vSecurity.clear();
+
+    for(int i=3120; i<100000; i++)
+    {
+        tSecurity.mdwSecurityID = i+100000;
+        tSecurity.mdwUnderlayingSecurityID = 2750;
+        tSecurity.msSecuritySymbol = to_string(i+100000);
+        tSecurity.meListExchange = EListExchange_SSE;
+        tSecurity.meTradingExchange = ETradingExchange_SSE;
+        vSecurity.push_back(tSecurity);
+    }
     dfBegin = getWallSec();
-    EECode eStatus3 = mysql->ReadFromDB(EDBDataType_Security, &vSecurity, 3120);
+    EECode eStatus2 = mysql->WriteToDB(EDBDataType_Security, SQL_MODE_SYNC, &vSecurity);
     dfFinish = getWallSec();
-    cout << "Security ReadFromDB(10W Lines): "<<dfFinish - dfBegin << "s" << endl;
+    cout << "Security WriteToDB(9.7W Lines): " <<dfFinish - dfBegin << "s" << endl;
+
+//    // read 100000 items
+//    vSecurity.clear();
+//    dfBegin = getWallSec();
+//    EECode eStatus3 = mysql->ReadFromDB(EDBDataType_Security, &vSecurity, 3120);
+//    dfFinish = getWallSec();
+//    cout << "Security ReadFromDB(10W Lines): "<<dfFinish - dfBegin << "s" << endl;
 
 //    // delete 100000 items
 //    EECode eStatus4;
@@ -89,7 +91,7 @@ int main(int argc, const char *argv[])
 //    {
 //        s8 sbySql[512] = {0, };
 //        snprintf(sbySql, sizeof(sbySql), "delete from security where securityid = %u;", i+100000);
-//        eStatus4 = mysql->DeleteFromDB(sbySql);
+//        eStatus4 = mysql->mysqlDelete(sbySql);
 //    }
     ////////////////////////////////////////////////////////////
     mysql->DeInitStorage();

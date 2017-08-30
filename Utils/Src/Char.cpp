@@ -260,3 +260,39 @@ char *ReplacePattern(const char *szOriginalSQL, const char *szPattern, const cha
     pszNew[k] = 0;
     return pszNew;
 }
+
+s8* DatabaseReplaceSupportedPatterns(const s8 *szOriginalSQL)
+{
+    s32 nLen;
+    s8 szNow[80];
+    s8 *pszNewSQL;
+    time_t tNow;
+
+    gfGetTrueTime(&tNow);
+    szNow[0] = '\'';
+    //GetTimeString(tNow, szNow+1, sizeof(szNow)-1);
+    struct tm ct;
+    localtime_r(&tNow, &ct);
+    snprintf(szNow+1, sizeof(szNow)-1, "%04d-%02d-%02d %02d:%02d:%02d",
+             (s32)(ct.tm_year +1900), (s32)(ct.tm_mon +1), (s32)(ct.tm_mday),
+             (s32)(ct.tm_hour), (s32)(ct.tm_min), (s32)(ct.tm_sec)
+            );
+
+    szNow[20] = '\'';
+    szNow[21] = 0;
+    pszNewSQL = ReplacePattern(szOriginalSQL, "{$NOW$}", szNow);
+    if(NULL == pszNewSQL)
+    {
+        nLen = strlen(szOriginalSQL);
+        pszNewSQL = new s8[nLen+1];
+        if(pszNewSQL)
+        {
+            strcpy(pszNewSQL, szOriginalSQL);
+        }
+        else
+        {
+//            LogMessage("Allocate memory for pszNew failed!");
+        }
+    }
+    return pszNewSQL;
+}
