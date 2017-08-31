@@ -2,11 +2,10 @@
 #define _ORACLE_POOL_H_
 
 #define DMYSQLPOOL_MAX_CONNECTION_NUM 200
-
+#include "Mutex.h"
 #include <string>
 #include <time.h>
 #include <mysql/mysql.h>
-#include "Mutex.h"
 
 typedef struct tagMYCONNECTION
 {
