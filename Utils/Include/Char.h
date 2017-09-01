@@ -16,9 +16,9 @@ char *UTF8ToGBK(const char *szUTF8);
 
 char *GBKToUTF8(const char *szGBK);
 
-char *ReplacePattern(const char *szOriginalSQL, const char *szPattern, const char *szValue);
+//char *ReplacePattern(const char *szOriginalSQL, const char *szPattern, const char *szValue);
 
-s8* DatabaseReplaceSupportedPatterns(const s8 *szOriginalSQL);
+//s8* DatabaseReplaceSupportedPatterns(const s8 *szOriginalSQL);
 
 
 #endif // CHAR_H_INCLUDED

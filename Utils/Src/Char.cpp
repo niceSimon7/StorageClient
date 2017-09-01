@@ -128,171 +128,171 @@ char *GBKToUTF8(const char *szGBK)
     return pszUtf8Str;
 }
 
-char *ReplacePattern(const char *szOriginalSQL, const char *szPattern, const char *szValue)
-{
-    char *pszNew,*pszNew2;
-    int nMaxLen;
-    int nValueLen;
-    int nLen;
-    int i,j,k,l,ml;
-    char szThisPattern[80];
-    bool bFoundEnd,bNeedReplace;
+//char *ReplacePattern(const char *szOriginalSQL, const char *szPattern, const char *szValue)
+//{
+//    char *pszNew,*pszNew2;
+//    int nMaxLen;
+//    int nValueLen;
+//    int nLen;
+//    int i,j,k,l,ml;
+//    char szThisPattern[80];
+//    bool bFoundEnd,bNeedReplace;
+//
+//    nValueLen = strlen(szValue);
+//    nLen = strlen(szOriginalSQL);
+//    nMaxLen = nLen+128;
+//    pszNew = new char[nMaxLen];
+//    if (!pszNew)
+//    {
+////		LogMessage("allocate memory for pszNew failed in ReplacePattern()");
+//        return NULL;
+//    }
+//
+//    i = j = k = 0;
+//    while (i<nLen)
+//    {
+//        if (szOriginalSQL[i]=='{' && i<nLen-1 && szOriginalSQL[i+1]=='$')
+//        {
+//            //处理模板，有两种结果：需要替换、不需要替换
+//            //寻找模板结尾
+//            j = i;
+//            bFoundEnd = false;
+//            szThisPattern[0] = 0;
+//            while (j<nLen-1)
+//            {
+//                if (szOriginalSQL[j]=='$' && szOriginalSQL[j+1]=='}')
+//                {
+//                    //找到结尾
+//                    bFoundEnd = true;
+//                    l = (j+2) - i;
+//                    if (l>(int)(sizeof(szThisPattern))-1)
+//                    {
+////						LogMessage("Too long pattern '%s'", szOriginalSQL+i);
+//                        l = sizeof(szThisPattern)-1;
+//                        delete pszNew;
+//                        return NULL;
+//                    }
+//                    strncpy(szThisPattern, szOriginalSQL+i, l);
+//                    szThisPattern[l] = 0;
+//                    break;
+//                }
+//                j++;
+//            }
+//
+//            if (!bFoundEnd)
+//            {
+//                //模板不配对，错误
+////				LogMessage("patern not match in ReplacePattern(): %s", szOriginalSQL+i);
+//                delete pszNew;
+//                return NULL;
+//            }
+//
+//            if (strcmp(szPattern, szThisPattern)==0)
+//            {
+//                //需要替换
+//                bNeedReplace = true;
+//                ml = k+nValueLen;
+//            }
+//            else
+//            {
+//                bNeedReplace = false;
+//                ml = k+l;
+//            }
+//            if (ml > nMaxLen-1)
+//            {
+//                //重新分配内存
+//                nMaxLen *= 2;
+//                if (nMaxLen<ml)
+//                {
+//                    nMaxLen = ml + 128;
+//                }
+//                pszNew2 = new char[nMaxLen];
+//                if (!pszNew2)
+//                {
+////					LogMessage("allocate memory for pszNew2 failed 1 in ReplacePattern()");
+//                    delete pszNew;
+//                    return NULL;
+//                }
+//                memcpy(pszNew2,pszNew,k);
+//                delete pszNew;
+//                pszNew = pszNew2;
+//            }
+//
+//            if (bNeedReplace)
+//            {
+//                memcpy(pszNew+k, szValue, nValueLen);
+//                k += nValueLen;
+//            }
+//            else
+//            {
+//                memcpy(pszNew+k, szThisPattern, l);
+//                k += l;
+//            }
+//            i += l;
+//        }
+//        else
+//        {
+//            //尚未到'{$'，拷贝
+//            if (k+1 > nMaxLen-1)
+//            {
+//                nMaxLen *= 2;
+//                if (nMaxLen<ml)
+//                {
+//                    nMaxLen = ml + 128;
+//                }
+//                pszNew2 = new char[nMaxLen];
+//                if (!pszNew2)
+//                {
+////					LogMessage("allocate memory for pszNew2 failed 2 in ReplacePattern()");
+//                    delete pszNew;
+//                    return NULL;
+//                }
+//                memcpy(pszNew2,pszNew,k);
+//                delete pszNew;
+//                pszNew = pszNew2;
+//            }
+//            pszNew[k] = szOriginalSQL[i];
+//            k++;
+//            i++;
+//        }
+//    }
+//
+//    pszNew[k] = 0;
+//    return pszNew;
+//}
 
-    nValueLen = strlen(szValue);
-    nLen = strlen(szOriginalSQL);
-    nMaxLen = nLen+128;
-    pszNew = new char[nMaxLen];
-    if (!pszNew)
-    {
-//		LogMessage("allocate memory for pszNew failed in ReplacePattern()");
-        return NULL;
-    }
-
-    i = j = k = 0;
-    while (i<nLen)
-    {
-        if (szOriginalSQL[i]=='{' && i<nLen-1 && szOriginalSQL[i+1]=='$')
-        {
-            //处理模板，有两种结果：需要替换、不需要替换
-            //寻找模板结尾
-            j = i;
-            bFoundEnd = false;
-            szThisPattern[0] = 0;
-            while (j<nLen-1)
-            {
-                if (szOriginalSQL[j]=='$' && szOriginalSQL[j+1]=='}')
-                {
-                    //找到结尾
-                    bFoundEnd = true;
-                    l = (j+2) - i;
-                    if (l>(int)(sizeof(szThisPattern))-1)
-                    {
-//						LogMessage("Too long pattern '%s'", szOriginalSQL+i);
-                        l = sizeof(szThisPattern)-1;
-                        delete pszNew;
-                        return NULL;
-                    }
-                    strncpy(szThisPattern, szOriginalSQL+i, l);
-                    szThisPattern[l] = 0;
-                    break;
-                }
-                j++;
-            }
-
-            if (!bFoundEnd)
-            {
-                //模板不配对，错误
-//				LogMessage("patern not match in ReplacePattern(): %s", szOriginalSQL+i);
-                delete pszNew;
-                return NULL;
-            }
-
-            if (strcmp(szPattern, szThisPattern)==0)
-            {
-                //需要替换
-                bNeedReplace = true;
-                ml = k+nValueLen;
-            }
-            else
-            {
-                bNeedReplace = false;
-                ml = k+l;
-            }
-            if (ml > nMaxLen-1)
-            {
-                //重新分配内存
-                nMaxLen *= 2;
-                if (nMaxLen<ml)
-                {
-                    nMaxLen = ml + 128;
-                }
-                pszNew2 = new char[nMaxLen];
-                if (!pszNew2)
-                {
-//					LogMessage("allocate memory for pszNew2 failed 1 in ReplacePattern()");
-                    delete pszNew;
-                    return NULL;
-                }
-                memcpy(pszNew2,pszNew,k);
-                delete pszNew;
-                pszNew = pszNew2;
-            }
-
-            if (bNeedReplace)
-            {
-                memcpy(pszNew+k, szValue, nValueLen);
-                k += nValueLen;
-            }
-            else
-            {
-                memcpy(pszNew+k, szThisPattern, l);
-                k += l;
-            }
-            i += l;
-        }
-        else
-        {
-            //尚未到'{$'，拷贝
-            if (k+1 > nMaxLen-1)
-            {
-                nMaxLen *= 2;
-                if (nMaxLen<ml)
-                {
-                    nMaxLen = ml + 128;
-                }
-                pszNew2 = new char[nMaxLen];
-                if (!pszNew2)
-                {
-//					LogMessage("allocate memory for pszNew2 failed 2 in ReplacePattern()");
-                    delete pszNew;
-                    return NULL;
-                }
-                memcpy(pszNew2,pszNew,k);
-                delete pszNew;
-                pszNew = pszNew2;
-            }
-            pszNew[k] = szOriginalSQL[i];
-            k++;
-            i++;
-        }
-    }
-
-    pszNew[k] = 0;
-    return pszNew;
-}
-
-s8* DatabaseReplaceSupportedPatterns(const s8 *szOriginalSQL)
-{
-    s32 nLen;
-    s8 szNow[80];
-    s8 *pszNewSQL;
-    time_t tNow;
-
-    gfGetTrueTime(&tNow);
-    szNow[0] = '\'';
-    //GetTimeString(tNow, szNow+1, sizeof(szNow)-1);
-    struct tm ct;
-    localtime_r(&tNow, &ct);
-    snprintf(szNow+1, sizeof(szNow)-1, "%04d-%02d-%02d %02d:%02d:%02d",
-             (s32)(ct.tm_year +1900), (s32)(ct.tm_mon +1), (s32)(ct.tm_mday),
-             (s32)(ct.tm_hour), (s32)(ct.tm_min), (s32)(ct.tm_sec)
-            );
-
-    szNow[20] = '\'';
-    szNow[21] = 0;
-    pszNewSQL = ReplacePattern(szOriginalSQL, "{$NOW$}", szNow);
-    if(NULL == pszNewSQL)
-    {
-        nLen = strlen(szOriginalSQL);
-        pszNewSQL = new s8[nLen+1];
-        if(pszNewSQL)
-        {
-            strcpy(pszNewSQL, szOriginalSQL);
-        }
-        else
-        {
-//            LogMessage("Allocate memory for pszNew failed!");
-        }
-    }
-    return pszNewSQL;
-}
+//s8* DatabaseReplaceSupportedPatterns(const s8 *szOriginalSQL)
+//{
+//    s32 nLen;
+//    s8 szNow[80];
+//    s8 *pszNewSQL;
+//    time_t tNow;
+//
+//    gfGetTrueTime(&tNow);
+//    szNow[0] = '\'';
+//    //GetTimeString(tNow, szNow+1, sizeof(szNow)-1);
+//    struct tm ct;
+//    localtime_r(&tNow, &ct);
+//    snprintf(szNow+1, sizeof(szNow)-1, "%04d-%02d-%02d %02d:%02d:%02d",
+//             (s32)(ct.tm_year +1900), (s32)(ct.tm_mon +1), (s32)(ct.tm_mday),
+//             (s32)(ct.tm_hour), (s32)(ct.tm_min), (s32)(ct.tm_sec)
+//            );
+//
+//    szNow[20] = '\'';
+//    szNow[21] = 0;
+//    pszNewSQL = ReplacePattern(szOriginalSQL, "{$NOW$}", szNow);
+//    if(NULL == pszNewSQL)
+//    {
+//        nLen = strlen(szOriginalSQL);
+//        pszNewSQL = new s8[nLen+1];
+//        if(pszNewSQL)
+//        {
+//            strcpy(pszNewSQL, szOriginalSQL);
+//        }
+//        else
+//        {
+////            LogMessage("Allocate memory for pszNew failed!");
+//        }
+//    }
+//    return pszNewSQL;
+//}

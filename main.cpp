@@ -78,21 +78,24 @@ int main(int argc, const char *argv[])
 //    dfFinish = getWallSec();
 //    cout << "Security WriteToDB(9.7W Lines): " <<dfFinish - dfBegin << "s" << endl;
 
-//    // read 100000 items
-//    vSecurity.clear();
-//    dfBegin = getWallSec();
-//    EECode eStatus3 = mysql->ReadFromDB(EDBDataType_Security, &vSecurity, 3120);
-//    dfFinish = getWallSec();
-//    cout << "Security ReadFromDB(10W Lines): "<<dfFinish - dfBegin << "s" << endl;
+    // read 100000 items
+    vSecurity.clear();
+    dfBegin = getWallSec();
+    EECode eStatus3 = mysql->ReadFromDB(EDBDataType_Security, 100000, &vSecurity);
+    dfFinish = getWallSec();
+    cout << "Security ReadFromDB(10W Lines): "<<dfFinish - dfBegin << "s" << endl;
 
-    // delete 100000 items
-    EECode eStatus4;
-    for(int i=3120; i<100000; i++)
-    {
-        s8 sbySql[512] = {0, };
-        snprintf(sbySql, sizeof(sbySql), "delete from security where securityid = %u;", i+100000);
-        eStatus4 = mysql->mysqlDelete(sbySql);
-    }
+//    // delete 100000 items
+//    EECode eStatus4;
+//    string sSql;
+//    for(int i=3120; i<100000; i++)
+//    {
+//        s8 sbySql[50] = {0, };
+//        snprintf(sbySql, sizeof(sbySql), "delete from security where securityid = %u;", i+100000);
+//        sSql = sbySql;
+////        eStatus4 = mysql->mysqlExecute(sSql, SQL_MODE_ASYNC);
+//        eStatus4 = mysql->mysqlDelete(sSql);
+//    }
     ////////////////////////////////////////////////////////////
     mysql->DeInitStorage();
     return 0;

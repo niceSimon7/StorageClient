@@ -1,5 +1,6 @@
 #include "StorageMysql.h"
 #include "MapArrayToStructArray.h"
+#include "String.h"
 #include <iostream>
 
 using namespace std;
@@ -80,7 +81,7 @@ CStorageMysql::~CStorageMysql()
 {
 }
 
-EECode CStorageMysql::mysqlQuery(const s8* pbySql, vector<map<string,string> >& vResultMap, u32 dwMaxRowCount)
+EECode CStorageMysql::mysqlQuery(string& pbySql, vector<map<string,string> >& vResultMap, u32 dwMaxRowCount)
 {
     s32 i, sdwReturn;
     HMYCONNECTION hconn;
@@ -88,8 +89,7 @@ EECode CStorageMysql::mysqlQuery(const s8* pbySql, vector<map<string,string> >& 
     MYSQL_ROW row;
     MYSQL_FIELD *fields = NULL;
     u32 dwFieldCount, dwRowCount;
-    s8* apbyFieldNames[DMAX_COLUME_NUM] = {NULL, };
-    s8* pbyFinalSQL = NULL;
+    vector<string> vFieldNames;
     map<string, string > mapRow;
     vResultMap.clear();
     vResultMap.reserve(dwMaxRowCount);
@@ -107,10 +107,10 @@ EECode CStorageMysql::mysqlQuery(const s8* pbySql, vector<map<string,string> >& 
         return EECode_NotInitilized;
     }
 
-    pbyFinalSQL = DatabaseReplaceSupportedPatterns(pbySql);
+    DatabaseReplaceSupportedPatterns(pbySql);
 
     //执行查询
-    sdwReturn = mysql_query(hconn->pmysql, pbyFinalSQL);
+    sdwReturn = mysql_query(hconn->pmysql, pbySql.c_str());
     if (0==sdwReturn)
     {
         res = mysql_use_result(hconn->pmysql);
@@ -118,18 +118,11 @@ EECode CStorageMysql::mysqlQuery(const s8* pbySql, vector<map<string,string> >& 
         {
             //第一行，写入列名。假设列名不含中文，可以视为utf8编码，不用转换字符集。
             dwFieldCount = mysql_num_fields(res);
-            if(dwFieldCount > DMAX_COLUME_NUM)
-            {
-//                LogMessage("CStorageMysql::mysqlQuery, the table colume beyond DMAX_COLUME_NUM!");
-                mptLocalDatabase->mpMysqlPool->Release(hconn);
-                hconn = NULL;
-                delete pbyFinalSQL;
-                return EECode_OutOfCapability;
-            }
+            vFieldNames.reserve(dwFieldCount);
             fields = mysql_fetch_fields(res);
             for (i=0; i<dwFieldCount; i++)
             {
-                apbyFieldNames[i] = StringToLower(fields[i].name);
+                vFieldNames.push_back(StringToLower(fields[i].name));
             }
 
             //写入数据（后续N行）。
@@ -146,7 +139,7 @@ EECode CStorageMysql::mysqlQuery(const s8* pbySql, vector<map<string,string> >& 
                 mapRow.clear();
                 for (i=0; i<(s32)dwFieldCount; i++)
                 {
-                    mapRow[apbyFieldNames[i]] = row[i]?row[i]:"";
+                    mapRow[vFieldNames[i]] = row[i]?row[i]:"";
                 }
                 vResultMap.push_back(mapRow);
                 dwRowCount++;
@@ -167,10 +160,8 @@ EECode CStorageMysql::mysqlQuery(const s8* pbySql, vector<map<string,string> >& 
             mptLocalDatabase->mpMysqlPool->Release(hconn);
         }
         hconn = NULL;
-        delete pbyFinalSQL;
         return EECode_Error;
     }
-    delete pbyFinalSQL;
 
     if (hconn)
     {
@@ -180,10 +171,8 @@ EECode CStorageMysql::mysqlQuery(const s8* pbySql, vector<map<string,string> >& 
     return eStatus;
 }
 
-EECode CStorageMysql::mysqlExecute(const s8* pbySql, s32 sdwWriteMode)
+EECode CStorageMysql::mysqlExecute(string& pbySql, s32 sdwWriteMode)
 {
-    u32 dwSqlLength;
-    s8* pbySqlTask = NULL;
     HMYCONNECTION hconn = NULL;
 
     if (!mysqlCheckReady())
@@ -193,25 +182,23 @@ EECode CStorageMysql::mysqlExecute(const s8* pbySql, s32 sdwWriteMode)
     }
 
     //更新远程库
-    dwSqlLength = strlen(pbySql);
     for (s32 i=0; i<mdwRemoteCount; i++)
     {
         pthread_mutex_lock(&(maptRemoteDatabase[i]->mTaskMutex));
         if (maptRemoteDatabase[i]->mlistTasks.size() < DMAX_QUEUED_SQL_TASK_COUNT)
         {
-            pbySqlTask = new s8[dwSqlLength+1];
-            if (!pbySqlTask)
+            unique_ptr<string> pSqlTask(new string(pbySql));
+            if (!pSqlTask)
             {
                 pthread_mutex_unlock(&(maptRemoteDatabase[i]->mTaskMutex));
 //                LogMessage("can not allocate memory for pbySqlTask in mysqlExecute().");
                 return EECode_Error;
             }
-            memcpy(pbySqlTask, pbySql, dwSqlLength+1);
             if(maptRemoteDatabase[i]->mlistTasks.empty())
             {
                 pthread_cond_signal(&(maptRemoteDatabase[i]->mTaskReadyEvent));
             }
-            maptRemoteDatabase[i]->mlistTasks.push_back(pbySqlTask);
+            maptRemoteDatabase[i]->mlistTasks.push_back(move(pSqlTask));
         }
         else
         {
@@ -229,19 +216,18 @@ EECode CStorageMysql::mysqlExecute(const s8* pbySql, s32 sdwWriteMode)
         pthread_mutex_lock(&(mptLocalDatabase->mTaskMutex));
         if (mptLocalDatabase->mlistTasks.size() < DMAX_QUEUED_SQL_TASK_COUNT)
         {
-            pbySqlTask = new s8[dwSqlLength+1];
-            if (!pbySqlTask)
+            unique_ptr<string> pSqlTask(new string(pbySql));
+            if (!pSqlTask)
             {
                 pthread_mutex_unlock(&(mptLocalDatabase->mTaskMutex));
 //                LogMessage("can not allocate memory for pbySqlTask 2 in mysqlExecute().");
                 return EECode_Error;
             }
-            memcpy(pbySqlTask, pbySql, dwSqlLength+1);
             if(mptLocalDatabase->mlistTasks.empty())
             {
                 pthread_cond_signal(&(mptLocalDatabase->mTaskReadyEvent));
             }
-            mptLocalDatabase->mlistTasks.push_back(pbySqlTask);
+            mptLocalDatabase->mlistTasks.push_back(move(pSqlTask));
         }
         else
         {
@@ -256,7 +242,7 @@ EECode CStorageMysql::mysqlExecute(const s8* pbySql, s32 sdwWriteMode)
         hconn = mptLocalDatabase->mpMysqlPool->Get();
         if (hconn)
         {
-            s32 sdwReturn = mysql_query(hconn->pmysql, pbySql);
+            s32 sdwReturn = mysql_query(hconn->pmysql, pbySql.c_str());
             if (0!=sdwReturn)
             {
 //                LogMessage("CStorageMysql::mysqlExecute, mysql_query() failed: Error %u (%s)", mysql_errno(hconn->pmysql), mysql_error(hconn->pmysql));
@@ -290,12 +276,10 @@ EECode CStorageMysql::mysqlExecute(const s8* pbySql, s32 sdwWriteMode)
 
 EECode CStorageMysql::ReadFromDB(IN EDBDataType eDBDataType, IN u32 dwMaxRowCount, IN OUT void* pData)
 {
-    s8* pbySql = NULL;
-    s8* pszOut = NULL;
     vector<map<string, string> > vResultMap;
-    EECode eStatus;
 
-    if(pData == NULL)
+
+    if(!pData)
     {
 //        LogMessage("CStorageMysql::ReadFromDB, pData is NULL!");
         return EECode_BadParam;
@@ -305,8 +289,8 @@ EECode CStorageMysql::ReadFromDB(IN EDBDataType eDBDataType, IN u32 dwMaxRowCoun
     {
     case EDBDataType_Security:
     {
-        pbySql = (s8*)"select * from security;";
-        eStatus = mysqlQuery(pbySql, vResultMap, dwMaxRowCount);
+        string sSql = "select * from security;";
+        EECode eStatus = mysqlQuery(sSql, vResultMap, dwMaxRowCount);
         if(eStatus != EECode_OK)
         {
             return eStatus;
@@ -317,8 +301,8 @@ EECode CStorageMysql::ReadFromDB(IN EDBDataType eDBDataType, IN u32 dwMaxRowCoun
     }
     case EDBDataType_ProcessList:
     {
-        pbySql = (s8*)"show processlist;";
-        eStatus = mysqlQuery(pbySql, vResultMap, dwMaxRowCount);
+        string sSql = "show processlist;";
+        EECode eStatus = mysqlQuery(sSql, vResultMap, dwMaxRowCount);
         if(eStatus != EECode_OK)
         {
             return eStatus;
@@ -329,8 +313,8 @@ EECode CStorageMysql::ReadFromDB(IN EDBDataType eDBDataType, IN u32 dwMaxRowCoun
     }
     case EDBDataType_Status:
     {
-        pbySql = (s8*)"show status;";
-        eStatus = mysqlQuery(pbySql, vResultMap, dwMaxRowCount);
+        string sSql = "show status;";
+        EECode eStatus = mysqlQuery(sSql, vResultMap, dwMaxRowCount);
         if(eStatus != EECode_OK)
         {
             return eStatus;
@@ -368,13 +352,6 @@ EECode CStorageMysql::WriteToDB(IN EDBDataType eDBDataType, IN s32 sdwWriteMode,
     {
         vector<TSecurity> vSecurity = *(vector<TSecurity> *)pData;
         vector<TSecurity>::iterator vIt;
-        const s8 *pbySecuritySymbol = NULL;
-        const s8 *pbySecurityType = NULL;
-        const s8 *pbyListExchange = NULL;
-        const s8 *pbyTradingExchange = NULL;
-        const s8 *pbyCurrency = NULL;
-        const s8 *pbyOptionType = NULL;
-        const s8 *pbyISIN = NULL;
         s8 abyExpiration[32];
 
         for( vIt = vSecurity.begin(); vIt != vSecurity.end(); vIt++ )
@@ -386,36 +363,29 @@ EECode CStorageMysql::WriteToDB(IN EDBDataType eDBDataType, IN s32 sdwWriteMode,
                 return EECode_Error;
             }
 
-            pbySecuritySymbol = vIt->msSecuritySymbol.empty()? "" : vIt->msSecuritySymbol.c_str();
-            pbySecurityType = g_tStaticEnumMap.m_MapESecurityTypeValue2String[vIt->meSecurityType].empty()? "" : g_tStaticEnumMap.m_MapESecurityTypeValue2String[vIt->meSecurityType].c_str();
-            pbyListExchange = g_tStaticEnumMap.m_MapEListExchangeValue2String[vIt->meListExchange].empty()? "" : g_tStaticEnumMap.m_MapEListExchangeValue2String[vIt->meListExchange].c_str();
-            pbyTradingExchange = g_tStaticEnumMap.m_MapETradingExchangeValue2String[vIt->meTradingExchange].empty()? "" : g_tStaticEnumMap.m_MapETradingExchangeValue2String[vIt->meTradingExchange].c_str();
-            pbyCurrency = g_tStaticEnumMap.m_MapECurrencyValue2String[vIt->meCurrency].empty()? "" : g_tStaticEnumMap.m_MapECurrencyValue2String[vIt->meCurrency].c_str();
-            pbyOptionType = vIt->msOptionType.empty()? "" : vIt->msOptionType.c_str();
-            pbyISIN = vIt->msISIN.empty()? "" : vIt->msISIN.c_str();
-
             snprintf(abySql, sizeof(abySql), "insert into %s.security(securityid, securitysymbol, securitytype, listexchange, tradingexchange, currency, expiration, strike, optiontype, underlayingsecurityid, contractsize, ticksize, longmarginrate, shortmarginrate, generalmarginrate, isin, tradeable, expirable) \
 values('%u', '%s', '%s', '%s', '%s', '%s', '%s', '%lf', '%s', '%u', '%u', '%lf', '%lf', '%lf', '%lf', '%s', b'%u', b'%u')", mabyDefaultDBName,
                      vIt->mdwSecurityID,
-                     pbySecuritySymbol,
-                     pbySecurityType,
-                     pbyListExchange,
-                     pbyTradingExchange,
-                     pbyCurrency,
+                     vIt->msSecuritySymbol.c_str(),
+                     g_tStaticEnumMap.m_MapESecurityTypeValue2String[vIt->meSecurityType].c_str(),
+                     g_tStaticEnumMap.m_MapEListExchangeValue2String[vIt->meListExchange].c_str(),
+                     g_tStaticEnumMap.m_MapETradingExchangeValue2String[vIt->meTradingExchange].c_str(),
+                     g_tStaticEnumMap.m_MapECurrencyValue2String[vIt->meCurrency].c_str(),
                      abyExpiration,
                      vIt->mdfStrike,
-                     pbyOptionType,
+                     vIt->msOptionType.c_str(),
                      vIt->mdwUnderlayingSecurityID,
                      vIt->mdwContractSize,
                      vIt->mdfTickSize,
                      vIt->mdfLongMarginRate,
                      vIt->mdfShortMarginRate,
                      vIt->mdfGeneralMarginRate,
-                     pbyISIN,
+                     vIt->msISIN.c_str(),
                      vIt->mbTradeAble,
                      vIt->mbExpirAble);
 
-            eStatus = mysqlExecute(abySql, sdwWriteMode);
+            string sSql(abySql);
+            eStatus = mysqlExecute(sSql, sdwWriteMode);
             if(EECode_OK != eStatus)
             {
 //                LogMessage("CStorageMysql::WriteToDB, TSecurity mdwSecurityID = %u update db.security failed!", vIt->mdwSecurityID);
@@ -438,9 +408,9 @@ values('%u', '%s', '%s', '%s', '%s', '%s', '%s', '%lf', '%s', '%u', '%u', '%lf',
 }
 
 
-EECode CStorageMysql::mysqlDelete(IN s8* pbySql)
+EECode CStorageMysql::mysqlDelete(string& sSql)
 {
-    EECode eStatus = mysqlExecute(pbySql, SQL_MODE_ASYNC);
+    EECode eStatus = mysqlExecute(sSql, SQL_MODE_ASYNC);
 
     return eStatus;
 }
@@ -454,7 +424,7 @@ BOOL CStorageMysql::mysqlCheckReady()
     HMYCONNECTION hconn = NULL;
     BOOL bDBReady = true;
 
-    if(mptLocalDatabase == NULL)
+    if(!mptLocalDatabase)
     {
         return false;
     }
@@ -520,7 +490,7 @@ BOOL CStorageMysql::mysqlCheckReady()
 void* _MysqlWorkThreadProc(void* lpParameter)
 {
     struct TMysqlWorkArea *ptMysqlWorkArea;
-    s8 *pbySql;
+    unique_ptr<string> pSql;
     s32 sdwReturn;
     s8 abyError[512];
     HMYCONNECTION hconn = NULL;
@@ -537,17 +507,15 @@ void* _MysqlWorkThreadProc(void* lpParameter)
         }
 
         // Get a task from mlistTasks
-        pbySql = NULL;
-        pbySql = ptMysqlWorkArea->mlistTasks.front();
+        pSql = move(ptMysqlWorkArea->mlistTasks.front());
         ptMysqlWorkArea->mlistTasks.pop_front();
 
         // Exit thread
         if(ptMysqlWorkArea->mbExitFlag == true) //Most situation not satisfied
         {
             // Finish all tasks
-            if(strcmp(pbySql, "Exit") == 0)
+            if("Exit" == *pSql)
             {
-                cout<< "task: "<<ptMysqlWorkArea->mlistTasks.size() << " --" << pbySql << endl;
                 pthread_mutex_unlock(&(ptMysqlWorkArea->mTaskMutex));
                 break;
             }
@@ -558,22 +526,21 @@ void* _MysqlWorkThreadProc(void* lpParameter)
         }
         pthread_mutex_unlock(&(ptMysqlWorkArea->mTaskMutex));
 
-        // When pbySql is NULL, continue next
-        if(!pbySql)
-        {
-            continue;
-        }
+//        // When pbySql is NULL, continue next
+//        if(!pbySql)
+//        {
+//            continue;
+//        }
 
         // Execute task
         hconn = ptMysqlWorkArea->mpMysqlPool->Get();
         if (hconn)
         {
-            sdwReturn = mysql_query(hconn->pmysql, pbySql);
+            sdwReturn = mysql_query(hconn->pmysql, pSql->c_str());
             if (0!=sdwReturn)
             {
-                strncpy(abyError,mysql_error(hconn->pmysql),sizeof(abyError));
-                abyError[sizeof(abyError)-1] = 0;
-                if (1==sdwReturn && strncmp(abyError,"Duplicate entry",15)==0)
+                string sError = mysql_error(hconn->pmysql);
+                if (1==sdwReturn && sError.compare(0, 15, "Duplicate entry")==0)
                 {
                     //忽略 "Duplicate entry" 错误
                 }
@@ -601,10 +568,10 @@ void* _MysqlWorkThreadProc(void* lpParameter)
         {
 //            LogMessage("_MysqlWorkThreadProc, ptMysqlWorkArea->mpMysqlPool->Get() failed");
         }
-        if(pbySql)
-        {
-            delete pbySql;
-        }
+//        if(pbySql)
+//        {
+//            delete pbySql;
+//        }
     }
 
     return 0;
@@ -684,7 +651,11 @@ void CStorageMysql::destroyMysqlWorkArea(struct TMysqlWorkArea *ptMysqlWorkArea)
 
     ptMysqlWorkArea->mbExitFlag = true;     //退出工作区
     pthread_mutex_lock(&(ptMysqlWorkArea->mTaskMutex));
-    ptMysqlWorkArea->mlistTasks.push_back((s8*)"Exit");
+    unique_ptr<string> pExit(new string("Exit"));
+    if(!pExit){
+//        LogMessage("CStorageMysql::createMysqlWorkArea, new pExit failed!");
+    }
+    ptMysqlWorkArea->mlistTasks.push_back(move(pExit));
     pthread_cond_signal(&(ptMysqlWorkArea->mTaskReadyEvent)); //触发事件信号
     pthread_mutex_unlock(&(ptMysqlWorkArea->mTaskMutex));
 

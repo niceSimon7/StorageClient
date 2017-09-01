@@ -3,12 +3,13 @@
 
 #define DMAX_REMOTE_MYSQL_COUNT 16
 #define DMAX_QUEUED_SQL_TASK_COUNT 100000
-#define DMAX_COLUME_NUM 200
 
 #define SQL_MODE_SYNC 1
 #define SQL_MODE_ASYNC 2
 
 #include <pthread.h>
+#include <memory>
+#include <sstream>
 #include <string.h>
 #include <vector>
 #include <list>
@@ -36,12 +37,12 @@ public:
     static CStorageMysql* Create();
     EECode ReadFromDB(IN EDBDataType eDBDataType, IN u32 dwMaxRowCount, IN OUT void* pData);
     EECode WriteToDB(IN EDBDataType eDBDataType, IN s32 sdwWriteMode, IN void* pData);
-    EECode mysqlDelete(IN s8* pbySql);
+    EECode mysqlDelete(string& pbySql);
 
 private:
     BOOL mysqlCheckReady();
-    EECode mysqlQuery(const s8* pbySql, vector<map<string,string> >& vResultMap, u32 dwMaxRowCount);
-    EECode mysqlExecute(const s8* pbySql, s32 sdwWriteMode);
+    EECode mysqlQuery(string& pbySql, vector<map<string,string> >& vResultMap, u32 dwMaxRowCount);
+    EECode mysqlExecute(string& pbySql, s32 sdwWriteMode);
 
     struct TMysqlWorkArea* createMysqlWorkArea(const s8* pbyHost, u16 wPort, const s8* pbyUser, const s8* pbyPassword, const s8* pbyDefaultDBName);
     void destroyMysqlWorkArea(struct TMysqlWorkArea* ptMysqlWorkArea);
@@ -58,7 +59,7 @@ struct TMysqlWorkArea
     pthread_t mhThread;
     BOOL mbExitFlag;
 
-    list<s8*> mlistTasks;
+    list<unique_ptr<string> > mlistTasks;
     pthread_mutex_t mTaskMutex;
     pthread_cond_t mTaskReadyEvent;
 
